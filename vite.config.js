@@ -5,8 +5,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
     plugins: [react()],
     test: {
-        enviroment: 'jsdom',
+        environment: 'jsdom',
         globals: true,
-        setupFiles: './src/__tests__/setup.js'
+        exclude: ['node_modules'],
+        include: ['src/**/*.{test,spec}.{js,jsx}']
     }
 })

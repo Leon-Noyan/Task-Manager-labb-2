@@ -1,15 +1,12 @@
 import { useState } from 'react'
-//import { addLog } from '../utils/logger'
 
 export function TaskForm({ onTaskCreated }) {
-    const [IsOpen, setIsOpen] = useState(false)
+    const [isOpen, setIsOpen] = useState(false)
     const [title, setTitle] = useState('')
     const [text, setText] = useState('')
-    const [loading, setLoading] = useState(false)
 
-    const handleCreateTask = async (e) => {
+    const handleCreateTask = (e) => {
         e.preventDefault()
-        setLoading(true)
 
         try {
             const newTask = {
@@ -19,36 +16,23 @@ export function TaskForm({ onTaskCreated }) {
                 status: 'pending'
             }
 
-            const existingTasks = JSON.parse(
-                localStorage.getItem('tasks') || '[]'
-            )
-
-            const updatedTasks = [...existingTasks, newTask]
-
-            localStorage.setItem('tasks', JSON.stringify(updatedTasks))
-
-            //addLog('INFO', `Task was created: "${newTask.title}"`)
-
             if (onTaskCreated) {
                 onTaskCreated(newTask)
             }
             setTitle('')
             setText('')
         } catch (error) {
-            // addLog('ERROR', 'Failed to save')
             console.error(error)
-        } finally {
-            setLoading(false)
         }
     }
 
     return (
         <div className="mb-6">
-            {!IsOpen ? (
+            {!isOpen ? (
                 <button onClick={() => setIsOpen(true)}>Create New Task</button>
             ) : (
                 <form onSubmit={handleCreateTask}>
-                    <div className="mb-4">
+                    <div className="form-field">
                         <label htmlFor="title" className="mb-2 block font-bold">
                             Title:
                         </label>
@@ -62,7 +46,7 @@ export function TaskForm({ onTaskCreated }) {
                             placeholder="Enter note title"
                         />
                     </div>
-                    <div className="mb-4">
+                    <div className="form-field">
                         <label htmlFor="text" className="mb-2 block font-bold">
                             Text:
                         </label>
@@ -73,7 +57,7 @@ export function TaskForm({ onTaskCreated }) {
                             className=""
                         />
                     </div>
-                    <div className="flex justify-end gap-2">
+                    <div className="form-actions">
                         <button
                             type="button"
                             onClick={() => setIsOpen(false)}
@@ -82,7 +66,7 @@ export function TaskForm({ onTaskCreated }) {
                             Cancel
                         </button>
                         <button type="submit" className="">
-                            {loading ? 'Creating...' : 'Create'}
+                            Create
                         </button>
                     </div>
                 </form>
