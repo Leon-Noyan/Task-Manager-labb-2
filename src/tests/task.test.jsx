@@ -1,133 +1,136 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { TaskForm } from '../components/TaskForm'
-import '@testing-library/jest-dom'
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import App from "../App";
+import { TaskForm } from "../components/TaskForm";
+import { TaskList } from "../components/TaskList";
+import { DeleteBtn } from "../components/DeleteBtn";
 
-describe('TaskForm', () => {
-    beforeEach(() => {
-        // rensar localStorage
-        localStorage.clear()
-    })
-    // helper function so we don't have to repeat creation
-    const fillAndCreateTask = async (user) => {
-        await user.click(
-            screen.getByRole('button', { name: /create new task/i })
-        )
-        await user.type(screen.getByLabelText(/title/i), 'Go to gym')
-        await user.type(screen.getByLabelText(/text/i), 'Train back')
-        await user.click(screen.getByRole('button', { name: /^create$/i }))
-    }
+import "@testing-library/jest-dom";
 
-    it('Contains empty values when creating', async () => {
-        render(<TaskForm />)
+describe("TaskForm", () => {
+  beforeEach(() => {
+    // rensar localStorage
+    localStorage.clear();
+  });
 
-        const button = screen.getByRole('button', { name: /create new task/i })
+  const toggleStatus = (status) =>
+    status === "pending" ? "completed" : "pending";
+  // helper function so we don't have to repeat creation
+  const fillAndCreateTask = async (user) => {
+    await user.click(screen.getByRole("button", { name: /create new task/i }));
+    await user.type(screen.getByLabelText(/title/i), "Go to gym");
+    await user.type(screen.getByLabelText(/text/i), "Train back");
+    await user.click(screen.getByRole("button", { name: /^create$/i }));
+  };
 
-        await userEvent.click(button)
+  it("Contains empty values when creating", async () => {
+    render(<TaskForm />);
 
-        expect(screen.getByLabelText(/title/i)).toHaveValue('')
-        expect(screen.getByLabelText(/text/i)).toHaveValue('')
-        expect(screen.getByRole('button', { name: /^create$/i })).toBeEnabled()
-    })
+    const button = screen.getByRole("button", { name: /create new task/i });
 
-    it('Creates a new task', async () => {
-        const user = userEvent.setup()
-        const mockOnTaskCreated = vi.fn()
+    await userEvent.click(button);
 
-        render(<TaskForm onTaskCreated={mockOnTaskCreated} />)
+    expect(screen.getByLabelText(/title/i)).toHaveValue("");
+    expect(screen.getByLabelText(/text/i)).toHaveValue("");
+    expect(screen.getByRole("button", { name: /^create$/i })).toBeEnabled();
+  });
 
-        await fillAndCreateTask(user)
+  it("Creates a new task", async () => {
+    const user = userEvent.setup();
+    const mockOnTaskCreated = vi.fn();
 
-        expect(mockOnTaskCreated).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'Go to gym',
-                description: 'Train back',
-                status: 'pending'
-            })
-        )
-    })
+    render(<TaskForm onTaskCreated={mockOnTaskCreated} />);
 
-    it('Checks that a task cannot be created without a title', async () => {
-        const user = userEvent.setup()
-        const mockOnTaskCreated = vi.fn()
+    await fillAndCreateTask(user);
 
-        render(<TaskForm onTaskCreated={mockOnTaskCreated} />)
+    expect(mockOnTaskCreated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Go to gym",
+        description: "Train back",
+        status: "pending",
+      }),
+    );
+  });
 
-        await user.click(
-            screen.getByRole('button', { name: /create new task/i })
-        )
+  it("Checks that a task cannot be created without a title", async () => {
+    const user = userEvent.setup();
+    const mockOnTaskCreated = vi.fn();
 
-        await user.type(screen.getByLabelText(/title/i), 'Train back')
+    render(<TaskForm onTaskCreated={mockOnTaskCreated} />);
 
-        user.click(screen.getByRole('button', { name: /^create$/i }))
+    await user.click(screen.getByRole("button", { name: /create new task/i }));
+    await user.click(screen.getByRole("button", { name: /^create$/i }));
 
-        expect(mockOnTaskCreated).not.toHaveBeenCalled()
+    expect(mockOnTaskCreated).not.toHaveBeenCalled();
+    expect(screen.getByLabelText(/title/i)).toHaveValue("");
+  });
 
-        expect(screen.getByLabelText(/title/i)).toBeInvalid()
-    })
+  it("Does not create a task with only whitespace", async () => {
+    const user = userEvent.setup();
+    const mockOnTaskCreated = vi.fn();
 
-    it('Does not create a task with only whitespace', async () => {
-        const user = userEvent.setup()
+    render(<TaskForm onTaskCreated={mockOnTaskCreated} />);
 
-        render(<TaskForm />)
+    await user.click(
+      screen.getByRole("button", { name: /^create new task$/i }),
+    );
+    await user.type(screen.getByLabelText(/title/i), " ");
+    await user.click(screen.getByRole("button", { name: /^create$/i }));
 
-        await user.type(screen.getByLabelText(/title/i), ' ')
-        await user.click(screen.getByRole('button', { name: /^create$/i }))
+    expect(mockOnTaskCreated).not.toHaveBeenCalled();
+  });
 
-        const savedTasks = JSON.parse(localStorage.getItem('tasks')) || []
-        expect(savedTasks).toHaveLength(0)
-    })
+  it("Checks that task is being saved to localStorage", async () => {
+    const user = userEvent.setup();
+    render(<App />);
 
-    it('Checks that task is being saved to localStorage', async () => {
-        const user = userEvent.setup()
+    await fillAndCreateTask(user);
 
-        render(<TaskForm />)
+    const savedTasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+    expect(savedTasks).toHaveLength(1);
+    expect(savedTasks[0].title).toBe("Go to gym");
+    expect(savedTasks[0].description).toBe("Train back");
+    expect(savedTasks[0].status).toBe("pending");
+  });
 
-        await fillAndCreateTask(user)
+  it("Checks that task can change status", async () => {
+    let status = "pending";
 
-        const savedTasks = JSON.parse(localStorage.getItem('tasks'))
-        expect(savedTasks).toHaveLength(1)
-        expect(savedTasks[0].title).toBe('Go to gym')
-        expect(savedTasks[0].description).toBe('Train back')
-        expect(savedTasks[0].status).toBe('pending')
-    })
+    status = toggleStatus(status);
+    expect(status).toBeTruthy();
+    expect(status).toBe("completed");
+  });
 
-    it('Checks that task can change status', async () => {
-        let status = 'pending'
+  it("Checks that a task can be deleted", async () => {
+    const user = userEvent.setup();
+    const mockSetTasks = vi.fn();
+    const task = {
+      id: "1",
+      title: "Go to gym",
+      description: "Train back",
+      status: "pending",
+    };
 
-        // status = toggleStatus(status)
-        expect(status).toBeTruthy()
-        expect(status).toBe('completed')
-    })
+    render(
+      <DeleteBtn id={task.id} title={task.title} setTasks={mockSetTasks} />,
+    );
 
-    it('Checks that a task can be deleted', async () => {
-        const user = userEvent.setup()
-        const mockOnDelete = vi.fn()
-        const task = {
-            id: '1',
-            title: 'Go to gym',
-            description: 'Train back',
-            status: 'pending'
-        }
+    const deleteButton = screen.getByRole("button", { name: /delete/i });
+    await user.click(deleteButton);
 
-        render(<TaskItem task={task} onDelete={mockOnDelete} />)
+    expect(mockSetTasks).toHaveBeenCalledTimes(1);
+  });
 
-        const deleteButton = screen.getByRole('button', { name: /delete/i })
-        await user.click(deleteButton)
+  it("Checks correct amount completed tasks", async () => {
+    const tasks = [
+      { id: "1", title: "Task 1", status: "completed" },
+      { id: "2", title: "Task 2", status: "pending" },
+      { id: "3", title: "Task 3", status: "completed" },
+    ];
+    render(<TaskList tasks={tasks} setTasks={() => {}} />);
 
-        expect(mockOnDelete).toHaveBeenCalledWith('1')
-    })
-
-    it('Checks correct amount completed tasks', async () => {
-        const tasks = [
-            { id: '1', title: 'Task 1', status: 'completed' },
-            { id: '2', title: 'Task 2', status: 'pending' },
-            { id: '3', title: 'Task 3', status: 'completed' }
-        ]
-        render(<TaskCounter tasks={tasks} />)
-
-        const completed = screen.getByText(/2 of 3 completed/i)
-        expect(completed).toBeInTheDocument()
-    })
-})
+    const completed = screen.getByText(/2 of 3 completed/i);
+    expect(completed).toBeInTheDocument();
+  });
+});

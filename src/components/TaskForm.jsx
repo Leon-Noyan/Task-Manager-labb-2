@@ -9,6 +9,9 @@ export function TaskForm({ onTaskCreated }) {
   const handleCreateTask = (e) => {
     e.preventDefault();
 
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return;
+
     try {
       const newTask = {
         id: Date.now().toString(),

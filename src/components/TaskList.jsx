@@ -1,6 +1,9 @@
 import { DeleteBtn } from "./DeleteBtn";
 
 export function TaskList({ tasks, setTasks }) {
+  const taskCount = tasks.filter(
+    (tasks) => tasks.status === "completed",
+  ).length;
   const handleToggleStatus = (id) => {
     setTasks((prevTasks) =>
       prevTasks.map((task) =>
@@ -17,6 +20,9 @@ export function TaskList({ tasks, setTasks }) {
   return (
     <div>
       <h2 className="h2">Current Tasks</h2>
+      <p>
+        {taskCount} of {tasks.length} completed
+      </p>
       {tasks.length === 0 ? (
         <p>No added tasks</p>
       ) : (
