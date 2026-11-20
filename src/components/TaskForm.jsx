@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getTimestamp } from "../utils/getTimestamp";
 
 export function TaskForm({ onTaskCreated }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -19,11 +20,18 @@ export function TaskForm({ onTaskCreated }) {
       if (onTaskCreated) {
         onTaskCreated(newTask);
       }
+
+      console.info(
+        `[INFO] ${getTimestamp()} - Task created: "${newTask.title}"`,
+      );
+
       setTitle("");
       setText("");
       setIsOpen(false);
     } catch (error) {
-      console.error(error);
+      console.error(
+        `[ERROR] ${getTimestamp()} - Failed to save task: ${error.message}`,
+      );
     }
   };
 

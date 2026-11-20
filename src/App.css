@@ -117,3 +117,7 @@ li:last-child {
 .storage-error {
   color: red;
 }
+
+.simBtn {
+  margin-right: 1rem;
+}
