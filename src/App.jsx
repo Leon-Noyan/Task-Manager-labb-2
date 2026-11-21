@@ -4,57 +4,83 @@ import { TaskForm } from "./components/TaskForm";
 import { TaskList } from "./components/TaskList";
 import { MonitorPanel } from "./components/Monitor";
 
+function readNumberFromStorage(key) {
+  try {
+    return Number(localStorage.getItem(key)) || 0;
+  } catch {
+    return 0
+  }
+}
+
+function readTasksFromStorage() {
+  try {
+    const savedTasks = localStorage.getItem("tasks");
+    return savedTasks ? JSON.parse(savedTasks) : [];
+  } catch (error) {
+    console.error("Failed to read tasks from localStorage", error)
+    return []
+  }
+}
+
 function App() {
-  const [createdCount, setCount] = useState(() => {
-    return Number(localStorage.getItem("createdCount")) || 0;
-  });
-  const [errorCount, setErrorCount] = useState(() => {
-    return Number(localStorage.getItem("errorCount")) || 0;
-  });
+  const [createdCount, setCount] = useState(() =>
+    readNumberFromStorage("createdCount")
+  );
+  const [errorCount, setErrorCount] = useState(() =>
+    readNumberFromStorage("errorCount")
+  );
   const [storageError, setStorageError] = useState("");
   const [failedStorageSim, setFailedStorageSim] = useState(false);
-  const [tasks, setTasks] = useState(() => {
-    try {
-      const savedTasks = localStorage.getItem("tasks");
-      return savedTasks ? JSON.parse(savedTasks) : [];
-    } catch (error) {
-      console.error("Failed to read tasks from localStorage", error);
-      return [];
-    }
-  });
-
-  const errorTotal = () => {
-    setErrorCount((prev) => {
-      const next = prev + 1;
-      localStorage.setItem("errorCount", String(next));
-      return next;
-    });
-  };
+  const [tasks, setTasks] = useState(readTasksFromStorage)
 
   useEffect(() => {
     try {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
-      setStorageError("");
+      localStorage.setItem("tasks", JSON.stringify(tasks))
     } catch (error) {
-      console.error("Failed to save tasks to localStorage", error);
-      setStorageError("Could not save tasks to localStorage");
-      errorTotal();
+      console.error("Failed to save tasks to localStorage", error)
     }
-  }, [tasks]);
+  }, [tasks])
 
+ const errorRecord = () => {
+  const nextErrorCount = errorCount + 1;
+  setErrorCount(nextErrorCount)
+  try {
+  localStorage.setItem("errorCount", String(nextErrorCount));
+  } catch (error) {
+    console.error("Failed to save errorCount to localStorage", error)
+  }
+ }
+
+ const persistentTasks = (nextTasks) => {
+  setTasks(nextTasks)
+
+  try {
+    localStorage.setItem("tasks", JSON.stringify(nextTasks))
+    setStorageError("")
+    return true
+  } catch (error) {
+    console.error("Failed to save tasks to localStorage", error)
+    setStorageError("Could not save tasks to localStorage")
+    errorRecord()
+    return false
+  }
+ }
   const handleTaskCreated = (newTask) => {
     if (failedStorageSim) {
-      errorTotal();
+      errorRecord();
       throw new Error("Failed storage error on purpose: failed to save task");
     }
-    setTasks((prevTasks) => [...prevTasks, newTask]);
+    const nextTasks = [...tasks, newTask];
+    persistentTasks(nextTasks)
 
-    setCount((prev) => {
-      const next = prev + 1;
-      localStorage.setItem("createdCount", String(next));
-      return next;
-    });
-  };
+    const nextCount = createdCount + 1;
+    setCount(nextCount);
+    try {
+      localStorage.setItem("createdCount", String(nextCount))
+    } catch (error) {
+      console.error("Failed to save createdCount to localStorage", error)
+    }
+  }
 
   const handleReset = () => {
     setFailedStorageSim(false);
@@ -88,7 +114,7 @@ function App() {
         </div>
       </section>
       <section>
-        <TaskList tasks={tasks} setTasks={setTasks} />
+        <TaskList tasks={tasks} setTasks={persistentTasks} />
       </section>
       <section>
         {failedStorageSim && (
@@ -122,5 +148,6 @@ function App() {
     </main>
   );
 }
+
 
 export default App;
